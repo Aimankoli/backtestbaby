@@ -297,17 +297,17 @@ if __name__ == "__main__":
 def execute_backtest(script_path: str) -> str:
     """
     Execute a Python backtesting script and capture its output.
-    
+
     Args:
         script_path: Path to the Python script to execute
-    
+
     Returns:
-        JSON string containing execution results, output, and any errors
+        JSON string containing execution results, parsed metrics, output, and plot path
     """
     try:
         print(f"\n[TOOL: execute_backtest] Executing backtest script...")
         print(f"[TOOL: execute_backtest] Script: {script_path}")
-        
+
         # Execute the script
         result = subprocess.run(
             [sys.executable, script_path],
@@ -315,18 +315,68 @@ def execute_backtest(script_path: str) -> str:
             text=True,
             timeout=60  # 60 second timeout
         )
-        
+
+        # Parse metrics from stdout
+        metrics = {}
+        plot_path = None
+
+        if result.returncode == 0:
+            stdout = result.stdout
+
+            # Extract metrics from the KEY PERFORMANCE METRICS section
+            import re
+
+            # Total Return
+            match = re.search(r'Total Return:\s+([-\d.]+)%', stdout)
+            if match:
+                metrics['total_return'] = float(match.group(1))
+
+            # Buy & Hold Return
+            match = re.search(r'Buy & Hold Return:\s+([-\d.]+)%', stdout)
+            if match:
+                metrics['buy_hold_return'] = float(match.group(1))
+
+            # Max Drawdown
+            match = re.search(r'Max Drawdown:\s+([-\d.]+)%', stdout)
+            if match:
+                metrics['max_drawdown'] = float(match.group(1))
+
+            # Sharpe Ratio
+            match = re.search(r'Sharpe Ratio:\s+([-\d.]+)', stdout)
+            if match:
+                metrics['sharpe_ratio'] = float(match.group(1))
+
+            # Number of Trades
+            match = re.search(r'# Trades:\s+(\d+)', stdout)
+            if match:
+                metrics['num_trades'] = int(match.group(1))
+
+            # Win Rate
+            match = re.search(r'Win Rate:\s+([-\d.]+)%', stdout)
+            if match:
+                metrics['win_rate'] = float(match.group(1))
+
+            # Extract plot path
+            match = re.search(r'Chart saved to:\s+(.+\.html)', stdout)
+            if match:
+                plot_path = match.group(1).strip()
+
         execution_result = {
             "success": result.returncode == 0,
             "script_path": script_path,
             "return_code": result.returncode,
             "stdout": result.stdout,
             "stderr": result.stderr if result.stderr else None,
-            "execution_time": "< 60s"
+            "execution_time": "< 60s",
+            "metrics": metrics,
+            "plot_path": plot_path
         }
-        
+
         if result.returncode == 0:
             print(f"[TOOL: execute_backtest] ✓ Execution successful")
+            print(f"[TOOL: execute_backtest] ✓ Parsed {len(metrics)} metrics")
+            if plot_path:
+                print(f"[TOOL: execute_backtest] ✓ Plot saved to {plot_path}")
             print(f"\n{'-'*70}")
             print("BACKTEST OUTPUT:")
             print(f"{'-'*70}")
@@ -335,7 +385,7 @@ def execute_backtest(script_path: str) -> str:
         else:
             print(f"[TOOL: execute_backtest] ✗ Execution failed with return code {result.returncode}")
             print(f"Error: {result.stderr}")
-        
+
         return json.dumps(execution_result, indent=2)
         
     except subprocess.TimeoutExpired:

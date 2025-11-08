@@ -18,3 +18,7 @@ COOKIE_MAX_AGE = 86400  # 1 day in seconds
 # MongoDB
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 MONGODB_DB_NAME = "BacktestMCP"
+
+# Dedalus
+DEDALUS_API_KEY = os.getenv("DEDALUS_API_KEY")
+DEFAULT_MODEL = "openai/gpt-4.1"

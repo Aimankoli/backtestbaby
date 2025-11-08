@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
-from app.routes import auth
+from app.routes import auth, conversations, strategies
 
 app = FastAPI(
     title="BacktestMCP API",
@@ -35,6 +35,8 @@ async def shutdown_event():
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(conversations.router)
+app.include_router(strategies.router)
 
 
 @app.get("/")

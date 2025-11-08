@@ -14,8 +14,21 @@ python-multipart==0.0.12
 # Environment variables
 python-dotenv==1.0.1
 
-# Existing dependencies (if any)
-dedalus-labs
+# Dedalus AI
+dedalus-labs==0.0.1
 
 # Pydantic for validation
-pydantic[email]==2.9.2
+pydantic==2.12.4
+pydantic-core==2.41.5
+
+# Backtesting tools
+yfinance==0.2.66
+backtesting==0.6.5
+TA-Lib==0.6.8
+pandas==2.3.3
+numpy==2.3.4
+
+# Additional dependencies for backtesting
+bokeh==3.8.1
+requests==2.32.5
+beautifulsoup4==4.14.2
