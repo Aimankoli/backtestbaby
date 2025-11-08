@@ -13,6 +13,7 @@ def get_user_id():
 # Check for new posts
 def check_posts(user_id):
     url = f"https://api.x.com/2/users/{user_id}/tweets?max_results=5"
+    #Dont worry my key is deprecated and it won't work ;)
     headers = {"Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAADhl5QEAAAAAa0wfkVtsuVGeG%2FBShHZS%2BQP3Atk%3DMSwaUikLRibtl3WxC1OYamDsjPwQ8vd2WGgxRPdun7bHzIAm60"}
     response = requests.get(url, headers=headers)
     print("Ran loop")
