@@ -47,25 +47,23 @@ export default function StrategiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="h-1 bg-secondary w-full" />
-
+    <main className="min-h-screen bg-[#050608] text-white">
       {/* Navigation */}
-      <nav className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between">
-        <Link href="/chat" className="text-2xl font-bold">
+      <nav className="border-b border-white/10 bg-[#0a0b0f] px-8 py-5 flex items-center justify-between">
+        <Link href="/chat" className="text-2xl font-bold hover:text-secondary transition">
           ⚡ Backtest Sandbox
         </Link>
         <div className="flex items-center gap-6">
-          <Link href="/chat" className="hover:text-secondary transition">
+          <Link href="/chat" className="text-sm text-white/70 hover:text-secondary transition">
             New Chat
           </Link>
           <Link href="/signals" className="hover:text-secondary transition">
             Signals
           </Link>
-          <div className="text-sm">{user?.username}</div>
+          <div className="text-sm text-white/60">{user?.username}</div>
           <Button
             variant="outline"
-            className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary bg-transparent"
+            className="rounded-xl border-white/20 text-white hover:bg-white/10 bg-transparent"
             onClick={handleLogout}
           >
             Logout
@@ -74,15 +72,16 @@ export default function StrategiesPage() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-8">
         <div className="mb-8">
+          <p className="text-xs uppercase tracking-[0.4em] text-white/40 mb-2">Strategy Library</p>
           <h1 className="text-4xl font-bold mb-2">My Strategies</h1>
-          <p className="text-muted-foreground">View and manage all your saved backtested strategies</p>
+          <p className="text-white/60">View and manage all your saved backtested strategies</p>
         </div>
 
-        <Card className="p-6">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
           <StrategiesTable />
-        </Card>
+        </div>
       </div>
     </main>
   )
