@@ -1,6 +1,7 @@
 from typing import Optional, AsyncIterator, Dict, Any
 import json
 import re
+import asyncio
 from datetime import datetime
 from app.config import DEFAULT_MODEL
 from app.services.dedalus_service import dedalus_service
@@ -83,30 +84,55 @@ async def process_chat_message(
     else:
         full_message = user_message
 
-    # Get response from Dedalus
+    # Get response from Dedalus - use non-streaming with manual chunks for reliability
     full_response = ""
+    result_obj = None
     try:
         print(f"[DEBUG] Calling Dedalus with message: {full_message[:100]}...")
 
-        # Call Dedalus with backtest tools
+        # Collect tool events in a list
+        tool_events_list = []
+
+        def on_tool_event_callback(event: Dict[str, Any]):
+            """Callback for tool execution events"""
+            print(f"[TOOL_EVENT] {event}")
+            tool_events_list.append(event)
+
+        # Call Dedalus with backtest tools - NON-STREAMING for stability
         result = await dedalus_service.chat_with_history(
             user_message=full_message,
             conversation_history=conversation_history if not is_first_message else [],
             model=model,
             mcp_servers=[],
             tools=[fetch_stock_data, generate_backtest_script, execute_backtest, explain_metric],
-            stream=False
+            stream=False,  # Use non-streaming for now
+            on_tool_event=on_tool_event_callback
         )
 
         print(f"[DEBUG] Got result from Dedalus")
+
+        # Extract response
         full_response = result.final_output if hasattr(result, 'final_output') else str(result)
         print(f"[DEBUG] Full response: {len(full_response)} chars")
+        print(f"[DEBUG] Tool events captured: {len(tool_events_list)}")
+
+        # Stream tool events first
+        for tool_event in tool_events_list:
+            yield json.dumps({"type": "tool_event", "data": tool_event}) + "\n"
+            await asyncio.sleep(0.05)  # Small delay for visual effect
+
+        # Manually chunk the response for streaming effect
+        CHUNK_SIZE = 50  # Characters per chunk
+        for i in range(0, len(full_response), CHUNK_SIZE):
+            chunk = full_response[i:i+CHUNK_SIZE]
+            yield json.dumps({"type": "content", "data": chunk}) + "\n"
+            await asyncio.sleep(0.03)  # Small delay for streaming effect
+
+        # Store result object for backtest extraction
+        result_obj = result
 
         # Check if backtest was executed and extract structured data
-        backtest_data = await extract_backtest_data(result)
-
-        # Yield the response
-        yield json.dumps({"type": "content", "data": full_response}) + "\n"
+        backtest_data = await extract_backtest_data(result_obj) if result_obj else None
 
         # If backtest data exists, send it as structured data
         if backtest_data:

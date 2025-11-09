@@ -27,7 +27,8 @@ class DedalusService:
         model: str = "openai/gpt-4.1",
         mcp_servers: Optional[List[str]] = None,
         tools: Optional[List[Any]] = None,
-        stream: bool = True
+        stream: bool = True,
+        on_tool_event: Optional[Any] = None
     ):
         """
         Send a chat message with conversation history
@@ -39,6 +40,7 @@ class DedalusService:
             mcp_servers: List of MCP servers to use
             tools: Custom Python tools
             stream: Whether to stream the response
+            on_tool_event: Callback for tool execution events
         """
         # Build full conversation with new message
         full_conversation = conversation_history + [{"role": "user", "content": user_message}]
@@ -51,7 +53,8 @@ class DedalusService:
             model=model,
             mcp_servers=mcp_servers or [],
             tools=tools or [],
-            stream=stream
+            stream=stream,
+            on_tool_event=on_tool_event
         )
 
         return result

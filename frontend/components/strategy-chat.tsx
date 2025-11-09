@@ -65,11 +65,21 @@ type BacktestPayload = {
   script_path?: string | null
 }
 
+type ToolEvent = {
+  tool_name?: string
+  status?: string
+  input?: any
+  output?: any
+  error?: string
+  [key: string]: any
+}
+
 type StreamChunk =
   | { type: "content"; data: string }
   | { type: "backtest_result"; data: BacktestPayload }
   | { type: "strategy_created"; data: { strategy_id?: string; name?: string } }
   | { type: "signal_created"; data: { signal_id?: string; twitter_username?: string; ticker?: string; status?: string } }
+  | { type: "tool_event"; data: ToolEvent }
   | { type: "error"; data?: string }
   | { type: "done" }
   | { type: string; data?: unknown }
@@ -123,6 +133,8 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [deleteSignalConfirmId, setDeleteSignalConfirmId] = useState<string | null>(null)
+  const [toolEvents, setToolEvents] = useState<ToolEvent[]>([])
+  const [isProcessingTools, setIsProcessingTools] = useState(false)
   const hasSelectedInitialConversation = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const streamControllers = useRef<Record<string, { buffer: string; timer: ReturnType<typeof setInterval> | null }>>(
@@ -450,6 +462,13 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
                 status: signalData.status || 'active'
               }])
             }
+          } else if (payload.type === "tool_event") {
+            const toolEvent = payload.data as ToolEvent
+            console.log('[TOOL_EVENT]', toolEvent)
+            setToolEvents((prev) => [...prev, toolEvent])
+            setIsProcessingTools(true)
+          } else if (payload.type === "done") {
+            setIsProcessingTools(false)
           } else if (payload.type === "error") {
             const errorData = payload.data as string | undefined
             throw new Error(errorData || "Chat error")
@@ -484,6 +503,8 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
     setError(null)
     const messageContent = input.trim()
     setInput("")
+    setToolEvents([])  // Clear previous tool events
+    setIsProcessingTools(false)
     const conversationId = await ensureConversationId()
 
     const userMessage: ConversationMessage = {
@@ -816,6 +837,95 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
             <>
               {strategyInfo && (
                 <BacktestInsight strategy={strategyInfo} backtest={backtestResult} metrics={metrics} />
+              )}
+
+              {/* Tool Progress Display */}
+              {toolEvents.length > 0 && (
+                <div className="rounded-3xl border border-secondary/40 bg-gradient-to-br from-secondary/10 via-transparent to-black/20 p-6 shadow-xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center",
+                      isProcessingTools ? "bg-secondary animate-pulse" : "bg-green-500"
+                    )}>
+                      {isProcessingTools ? (
+                        <svg className="w-5 h-5 text-black animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.4em] text-white/40">Tool Execution</p>
+                      <h3 className="text-lg font-semibold text-white">
+                        {isProcessingTools ? "Processing backtest tools..." : "Tools completed"}
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {toolEvents.map((event, idx) => {
+                      const toolName = event.tool_name || event.name || `Tool ${idx + 1}`
+                      const isComplete = event.status === 'complete' || event.status === 'success'
+                      const isError = event.status === 'error' || event.status === 'failed'
+                      const isRunning = event.status === 'running' || event.status === 'executing'
+
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all",
+                            isComplete ? "border-green-500/30 bg-green-500/10" :
+                            isError ? "border-red-500/30 bg-red-500/10" :
+                            isRunning ? "border-secondary/30 bg-secondary/10 animate-pulse" :
+                            "border-white/10 bg-white/5"
+                          )}
+                        >
+                          <div className={cn(
+                            "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center",
+                            isComplete ? "bg-green-500" :
+                            isError ? "bg-red-500" :
+                            isRunning ? "bg-secondary animate-pulse" :
+                            "bg-white/20"
+                          )}>
+                            {isComplete ? (
+                              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : isError ? (
+                              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            ) : isRunning ? (
+                              <div className="w-2 h-2 bg-black rounded-full animate-ping" />
+                            ) : (
+                              <div className="w-2 h-2 bg-white/50 rounded-full" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-white">{toolName}</p>
+                            {event.output && typeof event.output === 'string' && (
+                              <p className="text-xs text-white/50 mt-1 truncate">{event.output}</p>
+                            )}
+                            {event.error && (
+                              <p className="text-xs text-red-400 mt-1">{event.error}</p>
+                            )}
+                          </div>
+                          {isRunning && (
+                            <div className="flex-shrink-0">
+                              <svg className="w-5 h-5 text-secondary animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
 
               {isLoadingConversation ? (

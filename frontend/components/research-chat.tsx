@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
+import ReactMarkdown from "react-markdown"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -555,12 +556,33 @@ export default function ResearchChat() {
                           <span className="ml-2 text-secondary animate-pulse">●</span>
                         )}
                       </div>
-                      <p className="whitespace-pre-wrap leading-relaxed text-white/90">
-                        {message.content}
-                        {isStreaming && (
-                          <span className="inline-block w-2 h-4 ml-1 bg-secondary animate-pulse" />
-                        )}
-                      </p>
+                      {message.role === "assistant" ? (
+                        <div className="prose prose-invert max-w-none">
+                          <ReactMarkdown
+                            components={{
+                              h2: ({node, ...props}) => <h2 className="text-xl font-bold text-white mt-6 mb-3" {...props} />,
+                              h3: ({node, ...props}) => <h3 className="text-lg font-semibold text-white mt-4 mb-2" {...props} />,
+                              p: ({node, ...props}) => <p className="text-white/90 leading-relaxed mb-4" {...props} />,
+                              ul: ({node, ...props}) => <ul className="list-disc list-inside text-white/90 space-y-2 mb-4" {...props} />,
+                              ol: ({node, ...props}) => <ol className="list-decimal list-inside text-white/90 space-y-2 mb-4" {...props} />,
+                              li: ({node, ...props}) => <li className="text-white/90" {...props} />,
+                              a: ({node, ...props}) => <a className="text-secondary hover:text-secondary/80 underline" {...props} />,
+                              strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                              code: ({node, ...props}) => <code className="bg-white/10 px-2 py-1 rounded text-secondary font-mono text-sm" {...props} />,
+                              hr: ({node, ...props}) => <hr className="border-white/20 my-6" {...props} />,
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                          {isStreaming && (
+                            <span className="inline-block w-2 h-4 ml-1 bg-secondary animate-pulse" />
+                          )}
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap leading-relaxed text-white/90">
+                          {message.content}
+                        </p>
+                      )}
                     </div>
                   )
                 })
