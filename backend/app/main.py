@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
-from app.routes import auth, conversations, strategies, signals
+from app.routes import auth, conversations, strategies, signals, research
 from app.services.signal_monitor import signal_monitor
 
 app = FastAPI(
@@ -43,6 +43,7 @@ app.include_router(auth.router)
 app.include_router(conversations.router)
 app.include_router(strategies.router)
 app.include_router(signals.router)
+app.include_router(research.router)
 
 
 @app.get("/")
