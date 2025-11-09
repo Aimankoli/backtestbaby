@@ -51,7 +51,7 @@ export default function SignalsPage() {
       {/* Navigation */}
       <nav className="border-b border-white/10 bg-[#0a0b0f] px-8 py-5 flex items-center justify-between">
         <Link href="/chat" className="text-2xl font-bold hover:text-secondary transition">
-          ⚡ Backtest Sandbox
+          ⚡ Backtest Baby
         </Link>
         <div className="flex items-center gap-6">
           <Link href="/chat" className="text-sm text-white/70 hover:text-secondary transition">

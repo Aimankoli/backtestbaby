@@ -54,7 +54,7 @@ export default function ChatPage() {
       {/* Navigation */}
       <nav className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between">
         <Link href="/chat" className="text-2xl font-bold">
-          ⚡ Backtest Sandbox
+          ⚡ Backtest Baby
         </Link>
         <div className="flex items-center gap-6">
           <Link href="/research" className="hover:text-secondary transition">

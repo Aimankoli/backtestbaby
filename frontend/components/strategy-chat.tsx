@@ -314,7 +314,7 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
     setError(null)
     try {
       const conversation = await apiClient.post<ConversationResponse>("/conversations", {
-        title: `Strategy Session #${conversations.length + 1}`,
+        title: `Chat Session #${conversations.length + 1}`,
       })
       hasSelectedInitialConversation.current = true
       setSelectedConversationId(conversation.id)
@@ -617,7 +617,7 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
             onClick={handleCreateConversation}
             disabled={isSending}
           >
-            <span>New strategy</span>
+            <span>New Chat</span>
             <span className="text-lg">+</span>
           </Button>
           <p className="mt-3 text-xs text-white/40">All drafts auto-save in this panel.</p>

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import Image from "next/image"
 
 export default function Home() {
   const router = useRouter()
@@ -37,17 +36,19 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen bg-background overflow-hidden">
-      <div className="h-1 bg-secondary w-full relative z-20" />
+    <main className="relative min-h-screen bg-[#050608] overflow-hidden text-white">
+      {/* Yellowish light background effect */}
+      <div className="absolute inset-0 bg-gradient-to-b from-secondary/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-secondary/10 blur-[120px] rounded-full pointer-events-none" />
 
-      <nav className="relative z-20 bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between">
+      <nav className="relative z-20 border-b border-white/10 bg-[#0a0b0f]/80 backdrop-blur-sm px-8 py-5 flex items-center justify-between">
         <motion.div
-          className="text-xl font-bold"
+          className="text-2xl font-bold"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
-          ⚡ Backtest Sandbox
+          ⚡ Backtest Baby
         </motion.div>
         <motion.div
           className="flex gap-4"
@@ -58,22 +59,22 @@ export default function Home() {
           <Link href="/login">
             <Button
               variant="outline"
-              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary bg-transparent"
+              className="rounded-xl border-white/20 text-white hover:bg-white/10 bg-transparent"
             >
               Login
             </Button>
           </Link>
           <Link href="/signup">
-            <Button className="bg-secondary text-secondary-foreground hover:bg-accent">Sign Up</Button>
+            <Button className="rounded-xl bg-secondary text-black hover:bg-secondary/90">Sign Up</Button>
           </Link>
         </motion.div>
       </nav>
 
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4 py-12">
-        <div className="max-w-4xl mx-auto w-full">
+        <div className="max-w-6xl mx-auto w-full">
           {/* Main heading */}
           <motion.h1
-            className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-balance text-foreground text-center"
+            className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-balance text-white text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -83,7 +84,7 @@ export default function Home() {
 
           {/* Subtitle */}
           <motion.p
-            className="text-base sm:text-lg text-muted-foreground mb-8 text-center max-w-2xl mx-auto"
+            className="text-base sm:text-lg text-white/60 mb-12 text-center max-w-2xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -94,7 +95,7 @@ export default function Home() {
 
           {/* CTA Button */}
           <motion.div
-            className="flex justify-center mb-12"
+            className="flex justify-center mb-16"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -102,51 +103,56 @@ export default function Home() {
             <Link href="/signup">
               <Button
                 size="lg"
-                className="bg-secondary text-secondary-foreground hover:bg-accent px-8 py-6 text-base font-semibold"
+                className="rounded-full bg-secondary text-black hover:bg-secondary/90 px-10 py-6 text-lg font-semibold"
               >
                 Get Started Free
               </Button>
             </Link>
           </motion.div>
 
-          {/* Dashboard Image */}
+          {/* Feature Cards */}
           <motion.div
-            className="w-full max-w-4xl mx-auto mb-12"
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1, delay: 0.6 }}
-          >
-            <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden shadow-2xl border border-border">
-              <Image
-                src="/images/dash.png"
-                alt="Backtest Dashboard Interface"
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, (max-width: 1024px) 80vw, 1200px"
-                className="object-cover"
-                priority
-              />
-            </div>
-          </motion.div>
-
-          {/* Feature highlights */}
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6"
-            initial={{ opacity: 0, y: 20 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
           >
             {[
-              { title: "Natural Language", desc: "Describe your strategy in plain English" },
-              { title: "Real Data", desc: "Backtest with Yahoo Finance historical data" },
-              { title: "Instant Results", desc: "Get performance metrics and visualizations" },
+              {
+                title: "Natural Language",
+                desc: "Describe your strategy in plain English. No coding required - just tell us what you want to test.",
+              },
+              {
+                title: "Real Market Data",
+                desc: "Backtest with historical data from Yahoo Finance. Get accurate results based on real market conditions.",
+              },
+              {
+                title: "Instant Results",
+                desc: "Get comprehensive performance metrics, visualizations, and insights in seconds.",
+              },
+              {
+                title: "AI-Powered",
+                desc: "Our AI understands complex trading strategies and converts them into executable backtests.",
+              },
+              {
+                title: "Twitter Signals",
+                desc: "Monitor Twitter accounts for trading signals and automatically backtest sentiment-based strategies.",
+              },
+              {
+                title: "Strategy Library",
+                desc: "Save and manage all your strategies in one place. Compare performance across different approaches.",
+              },
             ].map((feature, idx) => (
-              <div
+              <motion.div
                 key={idx}
-                className="p-6 rounded-lg bg-card/50 backdrop-blur border border-border/50 hover:border-secondary/50 transition-all"
+                className="p-6 rounded-3xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-secondary/30 transition-all group"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.7 + idx * 0.1 }}
               >
-                <h3 className="font-semibold text-base mb-2 text-secondary">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.desc}</p>
-              </div>
+                <h3 className="font-semibold text-xl mb-3 text-white group-hover:text-secondary transition-colors">{feature.title}</h3>
+                <p className="text-sm text-white/60 leading-relaxed">{feature.desc}</p>
+              </motion.div>
             ))}
           </motion.div>
         </div>

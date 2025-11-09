@@ -53,19 +53,20 @@ export default function SignUp() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-secondary via-background to-background flex items-center justify-center">
-      <div className="h-1 bg-secondary fixed top-0 w-full" />
+    <main className="min-h-screen bg-[#050608] flex items-center justify-center text-white relative overflow-hidden">
+      {/* Yellowish glow effect behind signup box */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-secondary/15 blur-[150px] rounded-full pointer-events-none" />
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between h-16">
-        <Link href="/" className="text-2xl font-bold">
-          ⚡
+      <nav className="fixed top-0 left-0 right-0 border-b border-white/10 bg-[#0a0b0f]/80 backdrop-blur-sm px-8 py-5 flex items-center justify-between z-50">
+        <Link href="/" className="text-2xl font-bold hover:text-secondary transition">
+          ⚡ Backtest Baby
         </Link>
         <div className="flex gap-4">
           <Link href="/login">
             <Button
               variant="outline"
-              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary bg-transparent"
+              className="rounded-xl border-white/20 text-white hover:bg-white/10 bg-transparent"
             >
               Login
             </Button>
@@ -73,45 +74,45 @@ export default function SignUp() {
         </div>
       </nav>
 
-      <Card className="w-full max-w-md p-8 mt-16">
-        <h1 className="text-3xl font-bold mb-2">Create Account</h1>
-        <p className="text-muted-foreground mb-6">Join Backtest Sandbox today</p>
+      <div className="w-full max-w-md p-8 mt-16 rounded-3xl border border-white/10 bg-white/5 relative z-10">
+        <h1 className="text-3xl font-bold mb-2 text-white">Create Account</h1>
+        <p className="text-white/60 mb-6">Join Backtest Baby today</p>
 
         {error && (
-          <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md mb-6">
+          <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-xl mb-6">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Username</label>
+            <label className="block text-sm font-medium mb-2 text-white">Username</label>
             <input
               type="text"
               name="username"
               value={formData.username}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-border rounded-md focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-secondary focus:border-transparent outline-none placeholder:text-white/40"
               placeholder="your_username"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Email</label>
+            <label className="block text-sm font-medium mb-2 text-white">Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-border rounded-md focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-secondary focus:border-transparent outline-none placeholder:text-white/40"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Password</label>
+            <label className="block text-sm font-medium mb-2 text-white">Password</label>
             <input
               type="password"
               name="password"
@@ -119,13 +120,13 @@ export default function SignUp() {
               onChange={handleChange}
               required
               minLength={6}
-              className="w-full px-4 py-2 border border-border rounded-md focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-secondary focus:border-transparent outline-none placeholder:text-white/40"
               placeholder="••••••"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Confirm Password</label>
+            <label className="block text-sm font-medium mb-2 text-white">Confirm Password</label>
             <input
               type="password"
               name="confirmPassword"
@@ -133,7 +134,7 @@ export default function SignUp() {
               onChange={handleChange}
               required
               minLength={6}
-              className="w-full px-4 py-2 border border-border rounded-md focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-white/20 rounded-xl bg-white/5 text-white focus:ring-2 focus:ring-secondary focus:border-transparent outline-none placeholder:text-white/40"
               placeholder="••••••"
             />
           </div>
@@ -141,19 +142,19 @@ export default function SignUp() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 mt-6"
+            className="w-full rounded-xl bg-secondary text-black hover:bg-secondary/90 h-12 mt-6 font-semibold"
           >
             {isLoading ? "Creating Account..." : "Sign Up"}
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
+        <p className="text-center text-sm text-white/60 mt-6">
           Already have an account?{" "}
-          <Link href="/login" className="text-accent font-semibold hover:underline">
+          <Link href="/login" className="text-secondary font-semibold hover:underline">
             Login
           </Link>
         </p>
-      </Card>
+      </div>
     </main>
   )
 }
