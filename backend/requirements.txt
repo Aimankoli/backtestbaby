@@ -35,3 +35,7 @@ beautifulsoup4==4.14.2
 
 # Twitter API
 python-twitter-v2==0.9.3
+
+# Desktop Notifications
+plyer==2.1.0
+pyobjus==1.2.3; sys_platform == 'darwin'  # macOS notifications support

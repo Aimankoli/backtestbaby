@@ -18,12 +18,23 @@ from app.services.agent import (
 )
 
 
-SYSTEM_PROMPT = """You are a trading strategy assistant. When a user describes their strategy, start your response with:
+SYSTEM_PROMPT = """You are a trading strategy assistant with the ability to create backtesting strategies and set up Twitter sentiment signals.
 
+When a user describes their strategy, start your response with:
 STRATEGY_METADATA:
 {"name": "Strategy Name", "description": "Brief description"}
 
-Then provide your analysis and suggestions."""
+When a user asks to monitor a Twitter account or create a signal, start your response with:
+SIGNAL_METADATA:
+{"twitter_username": "username", "ticker": "SYMBOL", "check_interval": 60, "description": "Brief description"}
+
+Examples of signal requests:
+- "Monitor @elonmusk for TSLA signals"
+- "Track @cathiedwood tweets for ARKK sentiment"
+- "Create a signal for @realDonaldTrump on SPY"
+- "Watch @chamath for SPAC opportunities"
+
+Then provide your analysis and explain what the signal will do."""
 
 
 async def process_chat_message(
@@ -130,7 +141,39 @@ async def process_chat_message(
                         "description": strategy_metadata.get("description")
                     }
                 }) + "\n"
-        
+
+        # Check for signal creation request (can happen in any message)
+        signal_metadata = extract_signal_metadata(full_response)
+        if signal_metadata:
+            from app.services.signal_service import create_signal
+
+            print(f"[DEBUG] Creating signal from chat: @{signal_metadata['twitter_username']}")
+
+            # Create signal
+            signal = await create_signal(
+                user_id=user_id,
+                conversation_id=conversation_id,
+                twitter_username=signal_metadata["twitter_username"],
+                ticker=signal_metadata.get("ticker"),
+                check_interval=signal_metadata.get("check_interval", 60),
+                description=signal_metadata.get("description") or f"Monitor @{signal_metadata['twitter_username']} via chat"
+            )
+
+            signal_id = str(signal["_id"])
+            print(f"[DEBUG] Signal created: {signal_id}")
+
+            # Notify client that signal was created
+            yield json.dumps({
+                "type": "signal_created",
+                "data": {
+                    "signal_id": signal_id,
+                    "twitter_username": signal["twitter_username"],
+                    "ticker": signal.get("ticker"),
+                    "check_interval": signal["parameters"].get("check_interval", 60),
+                    "status": signal["status"]
+                }
+            }) + "\n"
+
         # Now save backtest results to the strategy (after it's been created)
         if backtest_data:
             strategy = await get_strategy_by_conversation(conversation_id, user_id)
@@ -351,6 +394,62 @@ def extract_strategy_metadata(response: str) -> Optional[Dict[str, Any]]:
             if name_match:
                 return {
                     "name": name_match.group(1),
+                    "description": desc_match.group(1) if desc_match else None
+                }
+
+    return None
+
+
+def extract_signal_metadata(response: str) -> Optional[Dict[str, Any]]:
+    """
+    Extract signal metadata from LLM response
+
+    Looks for pattern:
+    SIGNAL_METADATA:
+    {
+      "twitter_username": "...",
+      "ticker": "...",
+      "check_interval": 60,
+      "description": "..."
+    }
+    """
+    # Look for SIGNAL_METADATA: followed by JSON
+    pattern = r'SIGNAL_METADATA:\s*(\{[^}]+\})'
+    match = re.search(pattern, response, re.DOTALL)
+
+    if match:
+        try:
+            metadata_str = match.group(1)
+            # Clean up the JSON string (handle newlines, extra spaces)
+            metadata_str = re.sub(r'\s+', ' ', metadata_str)
+            metadata = json.loads(metadata_str)
+
+            # Validate required fields
+            if "twitter_username" in metadata:
+                # Remove @ if present
+                metadata["twitter_username"] = metadata["twitter_username"].lstrip("@")
+
+                # Set defaults
+                if "check_interval" not in metadata:
+                    metadata["check_interval"] = 60
+
+                # ticker can be None
+                if "ticker" not in metadata:
+                    metadata["ticker"] = None
+
+                return metadata
+        except json.JSONDecodeError:
+            # If JSON parsing fails, try to extract manually
+            username_match = re.search(r'"twitter_username"\s*:\s*"@?([^"]+)"', response)
+            ticker_match = re.search(r'"ticker"\s*:\s*"([^"]+)"', response)
+            interval_match = re.search(r'"check_interval"\s*:\s*(\d+)', response)
+            desc_match = re.search(r'"description"\s*:\s*"([^"]+)"', response)
+
+            if username_match:
+                return {
+                    "twitter_username": username_match.group(1),
+                    "ticker": ticker_match.group(1) if ticker_match else None,
+                    "check_interval": int(interval_match.group(1)) if interval_match else 60,
                     "description": desc_match.group(1) if desc_match else None
                 }
 

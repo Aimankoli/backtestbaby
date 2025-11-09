@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
+import SignalEventDetail from "@/components/signal-event-detail"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -68,6 +69,7 @@ type StreamChunk =
   | { type: "content"; data: string }
   | { type: "backtest_result"; data: BacktestPayload }
   | { type: "strategy_created"; data: { strategy_id?: string; name?: string } }
+  | { type: "signal_created"; data: { signal_id?: string; twitter_username?: string; ticker?: string; status?: string } }
   | { type: "error"; data?: string }
   | { type: "done" }
   | { type: string; data?: unknown }
@@ -113,8 +115,11 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
   const [isLoadingConversation, setIsLoadingConversation] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [strategyNotice, setStrategyNotice] = useState<string | null>(null)
+  const [signalNotice, setSignalNotice] = useState<string | null>(null)
   const [backtestResult, setBacktestResult] = useState<BacktestPayload | null>(null)
   const [strategyInfo, setStrategyInfo] = useState<StrategyResponse | null>(null)
+  const [signals, setSignals] = useState<Array<{id: string, twitter_username: string, ticker?: string, status: string}>>([])
+  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const hasSelectedInitialConversation = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
@@ -151,6 +156,15 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
       )
     } catch (err) {
       console.error("Failed to load strategy details:", err)
+    }
+  }, [])
+
+  const loadSignals = useCallback(async () => {
+    try {
+      const data = await apiClient.get<Array<{id: string, twitter_username: string, ticker?: string, status: string}>>("/signals")
+      setSignals(data)
+    } catch (err) {
+      console.error("Failed to load signals:", err)
     }
   }, [])
 
@@ -344,6 +358,17 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
             if (strategyData?.strategy_id) {
               loadStrategyDetails(strategyData.strategy_id).catch(() => undefined)
             }
+          } else if (payload.type === "signal_created") {
+            const signalData = payload.data as { signal_id?: string; twitter_username?: string; ticker?: string; status?: string }
+            setSignalNotice(`Signal created: Monitoring @${signalData?.twitter_username}${signalData?.ticker ? ` for $${signalData.ticker}` : ''}`)
+            if (signalData?.signal_id) {
+              setSignals((prev) => [...prev, {
+                id: signalData.signal_id!,
+                twitter_username: signalData.twitter_username || 'unknown',
+                ticker: signalData.ticker,
+                status: signalData.status || 'active'
+              }])
+            }
           } else if (payload.type === "error") {
             const errorData = payload.data as string | undefined
             throw new Error(errorData || "Chat error")
@@ -435,7 +460,8 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
 
   useEffect(() => {
     loadConversations()
-  }, [loadConversations])
+    loadSignals()
+  }, [loadConversations, loadSignals])
 
   useEffect(() => {
     scrollToBottom()
@@ -507,34 +533,79 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
           </Button>
           <p className="mt-3 text-xs text-white/40">All drafts auto-save in this panel.</p>
         </div>
-        <div className="flex-1 min-h-0 space-y-2 overflow-y-auto px-3 pb-6">
-          {conversations.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-xs text-white/50">
-              No conversations yet. Create your first strategy to get started.
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-6">
+          {/* Conversations Section */}
+          <div className="space-y-2 mb-6">
+            <div className="px-2 py-2 text-xs uppercase tracking-wide text-white/40">
+              Conversations
+            </div>
+            {conversations.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-xs text-white/50">
+                No conversations yet. Create your first strategy to get started.
+              </div>
+            )}
+            {conversations.map((conversation) => (
+              <button
+                key={conversation.id}
+                onClick={() => {
+                  handleSelectConversation(conversation.id)
+                  setSelectedSignalId(null)
+                }}
+                className={cn(
+                  "w-full rounded-2xl border px-4 py-3 text-left transition",
+                  conversation.id === selectedConversationId && !selectedSignalId
+                    ? "border-white/30 bg-white/10"
+                    : "border-white/5 hover:border-white/20",
+                )}
+              >
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span className="truncate">{conversation.title}</span>
+                  {conversation.strategy_id && (
+                    <span className="text-[10px] uppercase tracking-wide text-secondary">linked</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-white/50">
+                  {new Date(conversation.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </button>
+            ))}
+          </div>
+
+          {/* Signals Section */}
+          {signals.length > 0 && (
+            <div className="space-y-2 pt-4 border-t border-white/10">
+              <div className="px-2 py-2 text-xs uppercase tracking-wide text-white/40">
+                Active Signals
+              </div>
+              {signals.map((signal) => (
+                <button
+                  key={signal.id}
+                  onClick={() => setSelectedSignalId(signal.id)}
+                  className={cn(
+                    "w-full rounded-2xl border px-4 py-3 text-left transition",
+                    selectedSignalId === signal.id
+                      ? "border-green-500/40 bg-green-500/10"
+                      : "border-white/5 hover:border-white/20",
+                  )}
+                >
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span className="truncate">@{signal.twitter_username}</span>
+                    <span className={cn(
+                      "text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5",
+                      signal.status === 'active' ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"
+                    )}>
+                      {signal.status}
+                    </span>
+                  </div>
+                  {signal.ticker && (
+                    <p className="text-[11px] text-white/50 font-mono">
+                      ${signal.ticker}
+                    </p>
+                  )}
+                </button>
+              ))}
             </div>
           )}
-          {conversations.map((conversation) => (
-            <button
-              key={conversation.id}
-              onClick={() => handleSelectConversation(conversation.id)}
-              className={cn(
-                "w-full rounded-2xl border px-4 py-3 text-left transition",
-                conversation.id === selectedConversationId
-                  ? "border-white/30 bg-white/10"
-                  : "border-white/5 hover:border-white/20",
-              )}
-            >
-              <div className="flex items-center justify-between text-sm font-medium">
-                <span className="truncate">{conversation.title}</span>
-                {conversation.strategy_id && (
-                  <span className="text-[10px] uppercase tracking-wide text-secondary">linked</span>
-                )}
-              </div>
-              <p className="text-[11px] text-white/50">
-                {new Date(conversation.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </p>
-            </button>
-          ))}
         </div>
         <div className="border-t border-white/10 px-5 py-4 text-xs text-white/40 flex-shrink-0">
           Need historical runs?{" "}
@@ -575,8 +646,30 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
           </div>
         )}
 
+        {signalNotice && (
+          <div className="mx-8 mt-4 rounded-2xl border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm text-white flex-shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{signalNotice}</span>
+              <Button size="sm" variant="ghost" onClick={() => setSignalNotice(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
-          {!selectedConversation && (
+          {selectedSignalId ? (
+            <div>
+              <Button
+                onClick={() => setSelectedSignalId(null)}
+                variant="outline"
+                className="mb-6 border-white/20 text-white hover:bg-white/10"
+              >
+                ← Back to Chat
+              </Button>
+              <SignalEventDetail signalId={selectedSignalId} />
+            </div>
+          ) : !selectedConversation ? (
             <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/5 p-16 text-center">
               <div>
                 <p className="text-xl font-semibold">New strategy</p>
@@ -585,9 +678,7 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
                 </p>
               </div>
             </div>
-          )}
-
-          {selectedConversation && (
+          ) : (
             <>
               {strategyInfo && (
                 <BacktestInsight strategy={strategyInfo} backtest={backtestResult} metrics={metrics} />

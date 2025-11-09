@@ -22,6 +22,14 @@ from app.services.dedalus_service import dedalus_service
 from app.services.conversation_service import add_message_to_conversation
 from app.config import DEFAULT_MODEL
 
+# Desktop notifications
+try:
+    from plyer import notification
+    NOTIFICATIONS_AVAILABLE = True
+except ImportError:
+    NOTIFICATIONS_AVAILABLE = False
+    print("[SignalMonitor] plyer not available - desktop notifications disabled")
+
 
 class SignalMonitor:
     """Background service to monitor Twitter signals"""
@@ -437,6 +445,20 @@ Return ONLY valid JSON:
                 "backtest_results": backtest_result
             }}
         )
+
+        # Send desktop notification
+        if NOTIFICATIONS_AVAILABLE:
+            try:
+                emoji = "📈" if sentiment == "bullish" else "📉" if sentiment == "bearish" else "➡️"
+                notification.notify(
+                    title=f"{emoji} Signal Detected: @{twitter_username}",
+                    message=f"{sentiment.upper()} on {ticker or 'Unknown'} ({confidence:.0%} confidence)\n{tweet_text[:100]}...",
+                    app_name="BacktestMCP",
+                    timeout=10
+                )
+                print(f"[SignalMonitor] 🔔 Desktop notification sent")
+            except Exception as e:
+                print(f"[SignalMonitor] ⚠️ Notification failed (non-critical): {e}")
 
     async def _trigger_backtest(
         self,

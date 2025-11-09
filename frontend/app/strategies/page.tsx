@@ -57,7 +57,10 @@ export default function StrategiesPage() {
         </Link>
         <div className="flex items-center gap-6">
           <Link href="/chat" className="hover:text-secondary transition">
-            New Backtest
+            New Chat
+          </Link>
+          <Link href="/signals" className="hover:text-secondary transition">
+            Signals
           </Link>
           <div className="text-sm">{user?.username}</div>
           <Button
