@@ -57,6 +57,8 @@ type BacktestPayload = {
   backtest_id?: string
   metrics?: Record<string, number | string>
   plot_path?: string | null
+  plot_html?: string | null
+  data_csv?: string | null
   code?: string | null
   description?: string | null
   script_path?: string | null
@@ -65,7 +67,7 @@ type BacktestPayload = {
 type StreamChunk =
   | { type: "content"; data: string }
   | { type: "backtest_result"; data: BacktestPayload }
-  | { type: "strategy_created"; data: { strategy_id: string; name?: string } }
+  | { type: "strategy_created"; data: { strategy_id?: string; name?: string } }
   | { type: "error"; data?: string }
   | { type: "done" }
   | { type: string; data?: unknown }
@@ -326,26 +328,25 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
         if (!line) return
         try {
           const payload = JSON.parse(line) as StreamChunk
-          switch (payload.type) {
-            case "content":
-              if (payload.data) {
-                assistantText += payload.data
-                options?.onContentChunk?.(payload.data)
-              }
-              break
-            case "backtest_result":
-              setBacktestResult(payload.data || null)
-              break
-            case "strategy_created":
-              setStrategyNotice(`Strategy "${payload.data?.name ?? "Untitled"}" saved to your library.`)
-              if (payload.data?.strategy_id) {
-                loadStrategyDetails(payload.data.strategy_id).catch(() => undefined)
-              }
-              break
-            case "error":
-              throw new Error(payload.data || "Chat error")
-            default:
-              break
+
+          if (payload.type === "content") {
+            const contentData = payload.data as string
+            if (contentData) {
+              assistantText += contentData
+              options?.onContentChunk?.(contentData)
+            }
+          } else if (payload.type === "backtest_result") {
+            const backtestData = payload.data as BacktestPayload
+            setBacktestResult(backtestData || null)
+          } else if (payload.type === "strategy_created") {
+            const strategyData = payload.data as { strategy_id?: string; name?: string }
+            setStrategyNotice(`Strategy "${strategyData?.name ?? "Untitled"}" saved to your library.`)
+            if (strategyData?.strategy_id) {
+              loadStrategyDetails(strategyData.strategy_id).catch(() => undefined)
+            }
+          } else if (payload.type === "error") {
+            const errorData = payload.data as string | undefined
+            throw new Error(errorData || "Chat error")
           }
         } catch (err) {
           console.error("Failed to parse stream chunk:", err)
@@ -468,7 +469,7 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
   const metrics = (backtestResult?.metrics ?? {}) as Record<string, number | string>
 
   return (
-    <div className="flex min-h-screen bg-[#050608] text-white">
+    <div className="flex h-screen overflow-hidden bg-[#050608] text-white">
       {/* Sidebar Toggle Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -487,15 +488,15 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
         </svg>
       </button>
 
-      <aside className={`flex w-72 flex-col border-r border-white/10 bg-[#0a0b0f] transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full absolute h-full'}`}>
-        <div className="flex items-center justify-between px-5 py-5 border-b border-white/10">
+      <aside className={`flex w-72 h-screen flex-col border-r border-white/10 bg-[#0a0b0f] transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full absolute'}`}>
+        <div className="flex items-center justify-between px-5 py-5 border-b border-white/10 flex-shrink-0">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-white/40">Backtest Lab</p>
             <h2 className="text-lg font-semibold">Strategy Studio</h2>
           </div>
           <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">Beta</span>
         </div>
-        <div className="px-5 py-4">
+        <div className="px-5 py-4 flex-shrink-0">
           <Button
             className="w-full justify-between rounded-2xl bg-white/10 text-white hover:bg-white/20"
             onClick={handleCreateConversation}
@@ -506,7 +507,7 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
           </Button>
           <p className="mt-3 text-xs text-white/40">All drafts auto-save in this panel.</p>
         </div>
-        <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-6">
+        <div className="flex-1 min-h-0 space-y-2 overflow-y-auto px-3 pb-6">
           {conversations.length === 0 && (
             <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-xs text-white/50">
               No conversations yet. Create your first strategy to get started.
@@ -535,16 +536,16 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
             </button>
           ))}
         </div>
-        <div className="border-t border-white/10 px-5 py-4 text-xs text-white/40">
+        <div className="border-t border-white/10 px-5 py-4 text-xs text-white/40 flex-shrink-0">
           Need historical runs?{" "}
           <Link href="/strategies" className="text-secondary">
-            View strategies ->
+            View strategies {'->'}
           </Link>
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-white/10 px-8 py-5">
+      <div className="flex flex-1 flex-col h-screen">
+        <header className="flex items-center justify-between border-b border-white/10 px-8 py-5 flex-shrink-0">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-white/30">Chat workspace</p>
             <h1 className="text-2xl font-semibold">{selectedConversation?.title ?? "What's on the agenda today?"}</h1>
@@ -557,7 +558,7 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
         </header>
 
         {strategyNotice && (
-          <div className="mx-8 mt-4 rounded-2xl border border-secondary/40 bg-secondary/10 px-4 py-3 text-sm text-white">
+          <div className="mx-8 mt-4 rounded-2xl border border-secondary/40 bg-secondary/10 px-4 py-3 text-sm text-white flex-shrink-0">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span>{strategyNotice}</span>
               <div className="flex gap-2">
@@ -574,98 +575,96 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
           </div>
         )}
 
-        <div className="flex flex-1 flex-col">
-          <div className="flex-1 space-y-6 overflow-y-auto px-8 py-6">
-            {!selectedConversation && (
-              <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/5 p-16 text-center">
-                <div>
-                  <p className="text-xl font-semibold">New strategy</p>
-                  <p className="text-sm text-white/50">
-                    Describe the setup you want to trade and we&apos;ll fetch the data, build the code, and run the backtest.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {selectedConversation && (
-              <>
-                {strategyInfo && (
-                  <BacktestInsight strategy={strategyInfo} backtest={backtestResult} metrics={metrics} />
-                )}
-
-                {isLoadingConversation ? (
-                  <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-10 text-center text-sm text-white/60">
-                    Loading conversation...
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-white/10 px-6 py-12 text-center text-white/50">
-                    Share your first strategy prompt to kick off the analysis.
-                  </div>
-                ) : (
-                  messages.map((message, idx) => {
-                    const isStreaming = message.role === "assistant" && message.clientId && streamControllers.current[message.clientId]?.buffer
-                    return (
-                      <div
-                        key={message.clientId ?? `${message.timestamp}-${idx}`}
-                        className={cn(
-                          "w-full max-w-3xl rounded-3xl border px-6 py-4 shadow transition",
-                          message.role === "user"
-                            ? "ml-auto border-white/10 bg-[#1b1d24]"
-                            : "mr-auto border-white/5 bg-[#0d0f15]",
-                        )}
-                      >
-                        <div className="mb-2 flex items-center gap-3 text-xs uppercase tracking-wide text-white/40">
-                          <span>{message.role === "user" ? "You" : "Strategy Copilot"}</span>
-                          <span className="text-white/30">-</span>
-                          <span>
-                            {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                          {isStreaming && (
-                            <span className="ml-2 text-secondary animate-pulse">●</span>
-                          )}
-                        </div>
-                        <p className="whitespace-pre-wrap leading-relaxed text-white/90">
-                          {message.content}
-                          {isStreaming && (
-                            <span className="inline-block w-2 h-4 ml-1 bg-secondary animate-pulse" />
-                          )}
-                        </p>
-                      </div>
-                    )
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
-
-          <form onSubmit={handleSendMessage} className="border-t border-white/10 px-8 pb-8 pt-4">
-            {error && (
-              <div className="mb-3 rounded-2xl border border-destructive/60 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-            <div className="rounded-3xl border border-white/10 bg-[#0d0f15] p-4 shadow-inner">
-              <textarea
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="Ask anything... share indicators, entry rules, or constraints"
-                rows={3}
-                className="w-full resize-none bg-transparent text-base text-white/90 outline-none placeholder:text-white/40"
-              />
-              <div className="mt-3 flex items-center justify-between text-xs text-white/40">
-                <span>Shift + Enter for newline</span>
-                <Button
-                  type="submit"
-                  disabled={isSending || !input.trim()}
-                  className="rounded-full bg-secondary px-6 text-black hover:bg-secondary/90 disabled:opacity-50"
-                >
-                  {isSending ? "Thinking..." : messages.length === 0 ? "Backtest strategy" : "Send"}
-                </Button>
+        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+          {!selectedConversation && (
+            <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/5 p-16 text-center">
+              <div>
+                <p className="text-xl font-semibold">New strategy</p>
+                <p className="text-sm text-white/50">
+                  Describe the setup you want to trade and we&apos;ll fetch the data, build the code, and run the backtest.
+                </p>
               </div>
             </div>
-          </form>
+          )}
+
+          {selectedConversation && (
+            <>
+              {strategyInfo && (
+                <BacktestInsight strategy={strategyInfo} backtest={backtestResult} metrics={metrics} />
+              )}
+
+              {isLoadingConversation ? (
+                <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-10 text-center text-sm text-white/60">
+                  Loading conversation...
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-white/10 px-6 py-12 text-center text-white/50">
+                  Share your first strategy prompt to kick off the analysis.
+                </div>
+              ) : (
+                messages.map((message, idx) => {
+                  const isStreaming = message.role === "assistant" && message.clientId && streamControllers.current[message.clientId]?.buffer
+                  return (
+                    <div
+                      key={message.clientId ?? `${message.timestamp}-${idx}`}
+                      className={cn(
+                        "w-full max-w-3xl rounded-3xl border px-6 py-4 shadow transition",
+                        message.role === "user"
+                          ? "ml-auto border-white/10 bg-[#1b1d24]"
+                          : "mr-auto border-white/5 bg-[#0d0f15]",
+                      )}
+                    >
+                      <div className="mb-2 flex items-center gap-3 text-xs uppercase tracking-wide text-white/40">
+                        <span>{message.role === "user" ? "You" : "Strategy Copilot"}</span>
+                        <span className="text-white/30">-</span>
+                        <span>
+                          {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                        {isStreaming && (
+                          <span className="ml-2 text-secondary animate-pulse">●</span>
+                        )}
+                      </div>
+                      <p className="whitespace-pre-wrap leading-relaxed text-white/90">
+                        {message.content}
+                        {isStreaming && (
+                          <span className="inline-block w-2 h-4 ml-1 bg-secondary animate-pulse" />
+                        )}
+                      </p>
+                    </div>
+                  )
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </>
+          )}
         </div>
+
+        <form onSubmit={handleSendMessage} className="border-t border-white/10 px-8 pb-8 pt-4 flex-shrink-0">
+          {error && (
+            <div className="mb-3 rounded-2xl border border-destructive/60 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+          <div className="rounded-3xl border border-white/10 bg-[#0d0f15] p-4 shadow-inner">
+            <textarea
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask anything... share indicators, entry rules, or constraints"
+              rows={3}
+              className="w-full resize-none bg-transparent text-base text-white/90 outline-none placeholder:text-white/40"
+            />
+            <div className="mt-3 flex items-center justify-between text-xs text-white/40">
+              <span>Shift + Enter for newline</span>
+              <Button
+                type="submit"
+                disabled={isSending || !input.trim()}
+                className="rounded-full bg-secondary px-6 text-black hover:bg-secondary/90 disabled:opacity-50"
+              >
+                {isSending ? "Thinking..." : messages.length === 0 ? "Backtest strategy" : "Send"}
+              </Button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   )
