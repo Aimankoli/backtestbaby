@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -13,7 +13,7 @@ interface UserResponse {
   email: string
 }
 
-export default function ChatPage() {
+function ChatContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [user, setUser] = useState<UserResponse | null>(null)
@@ -53,10 +53,13 @@ export default function ChatPage() {
 
       {/* Navigation */}
       <nav className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between">
-        <Link href="/chat" className="text-2xl font-bold">
+        <Link href="/dashboard" className="text-2xl font-bold">
           ⚡ Backtest Baby
         </Link>
         <div className="flex items-center gap-6">
+          <Link href="/dashboard" className="hover:text-secondary transition">
+            Dashboard
+          </Link>
           <Link href="/research" className="hover:text-secondary transition">
             Research
           </Link>
@@ -80,5 +83,13 @@ export default function ChatPage() {
       {/* Main Content */}
       <StrategyChat initialStrategyId={initialStrategyId} />
     </main>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#050608] text-white">Loading...</div>}>
+      <ChatContent />
+    </Suspense>
   )
 }

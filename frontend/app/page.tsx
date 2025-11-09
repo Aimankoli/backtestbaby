@@ -20,7 +20,7 @@ export default function Home() {
         })
         if (response.ok) {
           setIsAuthenticated(true)
-          router.push("/chat")
+          router.push("/dashboard")
         }
       } catch {
         setIsAuthenticated(false)

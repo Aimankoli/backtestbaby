@@ -4,7 +4,7 @@ from typing import Optional, List
 from app.db.mongodb import get_db
 
 
-async def create_conversation(user_id: str, title: str = "New Conversation") -> dict:
+async def create_conversation(user_id: str, title: str = "New Conversation", conversation_type: str = "strategy") -> dict:
     """Create a new conversation"""
     db = get_db()
     conversation = {
@@ -13,6 +13,7 @@ async def create_conversation(user_id: str, title: str = "New Conversation") -> 
         "title": title,
         "messages": [],
         "status": "active",
+        "conversation_type": conversation_type,  # "strategy" or "research"
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import ResearchChat from "@/components/research-chat"
@@ -13,10 +13,12 @@ interface UserResponse {
   email: string
 }
 
-export default function ResearchPage() {
+function ResearchContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<UserResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const initialConversationId = searchParams.get("conversationId")
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -51,10 +53,13 @@ export default function ResearchPage() {
 
       {/* Navigation */}
       <nav className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between">
-        <Link href="/research" className="text-2xl font-bold">
-          🔬 Research Lab
+        <Link href="/dashboard" className="text-2xl font-bold">
+          ⚡ Backtest Baby
         </Link>
         <div className="flex items-center gap-6">
+          <Link href="/dashboard" className="hover:text-secondary transition">
+            Dashboard
+          </Link>
           <Link href="/chat" className="hover:text-secondary transition">
             Strategy Chat
           </Link>
@@ -76,7 +81,15 @@ export default function ResearchPage() {
       </nav>
 
       {/* Main Content */}
-      <ResearchChat />
+      <ResearchChat initialConversationId={initialConversationId} />
     </main>
+  )
+}
+
+export default function ResearchPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-[#050608] text-white">Loading...</div>}>
+      <ResearchContent />
+    </Suspense>
   )
 }

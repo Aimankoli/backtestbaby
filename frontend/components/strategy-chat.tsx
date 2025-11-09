@@ -3,6 +3,8 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -26,6 +28,7 @@ type ConversationResponse = {
   title: string
   status: string
   strategy_id?: string | null
+  conversation_type: string
   messages: ConversationMessage[]
   created_at: string
   updated_at: string
@@ -326,7 +329,8 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
     setError(null)
     try {
       const conversation = await apiClient.post<ConversationResponse>("/conversations", {
-        title: `Chat Session #${conversations.length + 1}`,
+        title: `Strategy #${conversations.length + 1}`,
+        conversation_type: "strategy",
       })
       hasSelectedInitialConversation.current = true
       setSelectedConversationId(conversation.id)
@@ -645,17 +649,17 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
         </div>
         {/* Sidebar scrollable area */}
         <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-6 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-          {/* Conversations Section */}
+          {/* Strategy Conversations Section */}
           <div className="space-y-2 mb-6">
             <div className="px-2 py-2 text-xs uppercase tracking-wide text-white/40">
-              Conversations
+              Strategy
             </div>
-            {conversations.length === 0 && (
+            {conversations.filter(c => c.conversation_type === "strategy").length === 0 && (
               <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-xs text-white/50">
-                No conversations yet. Create your first strategy to get started.
+                No strategy chats yet.
               </div>
             )}
-            {conversations.map((conversation) => (
+            {conversations.filter(c => c.conversation_type === "strategy").map((conversation) => (
               <div
                 key={conversation.id}
               className="relative group"
@@ -706,6 +710,58 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
             </div>
             ))}
           </div>
+
+          {/* Research Conversations Section */}
+          {conversations.filter(c => c.conversation_type === "research").length > 0 && (
+            <div className="space-y-2 mb-6 pt-4 border-t border-white/10">
+              <div className="px-2 py-2 text-xs uppercase tracking-wide text-white/40">
+                Research
+              </div>
+              {conversations.filter(c => c.conversation_type === "research").map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className="relative group"
+                >
+                  <Link href={`/research?conversationId=${conversation.id}`}>
+                    <button
+                      className={cn(
+                        "w-full rounded-2xl border px-4 py-3 text-left transition",
+                        "border-white/5 hover:border-white/20",
+                      )}
+                    >
+                      <div className="flex items-center justify-between text-sm font-medium pr-8">
+                        <span className="truncate">{conversation.title}</span>
+                      </div>
+                      <p className="text-[11px] text-white/50">
+                        {new Date(conversation.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </button>
+                  </Link>
+                  {/* Delete button with animation */}
+                  <button
+                    onClick={(e) => handleDeleteClick(conversation.id, e)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-destructive/80 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-destructive z-10"
+                    title="Delete conversation"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Signals Section */}
           {signals.length > 0 && (
@@ -959,12 +1015,28 @@ export default function StrategyChat({ initialStrategyId }: StrategyChatProps) {
                           <span className="ml-2 text-secondary animate-pulse">●</span>
                         )}
                       </div>
-                      <p className="whitespace-pre-wrap leading-relaxed text-white/90">
-                        {message.content}
+                      <div className="prose prose-invert max-w-none leading-relaxed text-white/90">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-white/95">{children}</em>,
+                            h1: ({ children }) => <h1 className="text-2xl font-bold text-white mb-3 mt-4">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-xl font-bold text-white mb-2 mt-3">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-lg font-bold text-white mb-2 mt-3">{children}</h3>,
+                            ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                            li: ({ children }) => <li className="mb-1">{children}</li>,
+                            code: ({ children }) => <code className="bg-white/10 px-1.5 py-0.5 rounded text-secondary">{children}</code>,
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
                         {isStreaming && (
                           <span className="inline-block w-2 h-4 ml-1 bg-secondary animate-pulse" />
                         )}
-                      </p>
+                      </div>
                     </div>
                   )
                 })

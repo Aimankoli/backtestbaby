@@ -158,10 +158,7 @@ export default function StrategiesTable() {
                   className="group relative cursor-pointer border-b border-white/10 hover:bg-white/5 transition"
                 >
                   <TableCell className="font-semibold text-white">
-                    <div>{strategy.name}</div>
-                    {strategy.description && (
-                      <p className="text-xs text-white/50">{strategy.description}</p>
-                    )}
+                    {strategy.name}
                   </TableCell>
                   <TableCell>
                     <span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-wide text-white/70">

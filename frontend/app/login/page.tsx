@@ -32,7 +32,7 @@ export default function Login() {
 
     try {
       await apiClient.post("/auth/login", formData)
-      router.push("/chat")
+      router.push("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")
     } finally {

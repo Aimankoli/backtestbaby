@@ -11,6 +11,7 @@ class Message(BaseModel):
 
 class ConversationCreate(BaseModel):
     title: Optional[str] = "New Conversation"
+    conversation_type: Optional[str] = "strategy"  # "strategy" or "research"
 
 
 class ConversationUpdate(BaseModel):
@@ -25,6 +26,7 @@ class ConversationResponse(BaseModel):
     title: str
     messages: List[Message] = []
     status: str = "active"  # active, completed, archived
+    conversation_type: str = "strategy"  # "strategy" or "research"
     created_at: datetime
     updated_at: datetime
 

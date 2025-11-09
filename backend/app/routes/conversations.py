@@ -30,7 +30,8 @@ async def create_new_conversation(
     """Create a new conversation"""
     conv = await create_conversation(
         user_id=current_user.id,
-        title=conversation.title or "New Conversation"
+        title=conversation.title or "New Conversation",
+        conversation_type=conversation.conversation_type or "strategy"
     )
 
     return ConversationResponse(
@@ -46,6 +47,7 @@ async def create_new_conversation(
             ) for msg in conv.get("messages", [])
         ],
         status=conv["status"],
+        conversation_type=conv.get("conversation_type", "strategy"),
         created_at=conv["created_at"],
         updated_at=conv["updated_at"]
     )
@@ -78,6 +80,7 @@ async def list_conversations(
                 ) for msg in conv.get("messages", [])
             ],
             status=conv["status"],
+            conversation_type=conv.get("conversation_type", "strategy"),
             created_at=conv["created_at"],
             updated_at=conv["updated_at"]
         )
@@ -112,6 +115,7 @@ async def get_conversation(
             ) for msg in conv.get("messages", [])
         ],
         status=conv["status"],
+        conversation_type=conv.get("conversation_type", "strategy"),
         created_at=conv["created_at"],
         updated_at=conv["updated_at"]
     )

@@ -48,28 +48,30 @@ export default function SignalsPage() {
 
   return (
     <main className="min-h-screen bg-[#050608] text-white">
+      <div className="h-1 bg-secondary w-full" />
+
       {/* Navigation */}
-      <nav className="border-b border-white/10 bg-[#0a0b0f] px-8 py-5 flex items-center justify-between">
-        <Link href="/chat" className="text-2xl font-bold hover:text-secondary transition">
+      <nav className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between">
+        <Link href="/dashboard" className="text-2xl font-bold">
           ⚡ Backtest Baby
         </Link>
         <div className="flex items-center gap-6">
-          <Link href="/chat" className="text-sm text-white/70 hover:text-secondary transition">
+          <Link href="/dashboard" className="hover:text-secondary transition">
+            Dashboard
+          </Link>
+          <Link href="/chat" className="hover:text-secondary transition">
             New Chat
           </Link>
-          <Link href="/research" className="text-sm text-white/70 hover:text-secondary transition">
+          <Link href="/research" className="hover:text-secondary transition">
             Research
           </Link>
-          <Link href="/strategies" className="text-sm text-white/70 hover:text-secondary transition">
+          <Link href="/strategies" className="hover:text-secondary transition">
             Strategies
           </Link>
-          <Link href="/signals" className="text-sm text-secondary">
-            Signals
-          </Link>
-          <div className="text-sm text-white/60">{user?.username}</div>
+          <div className="text-sm">{user?.username}</div>
           <Button
             variant="outline"
-            className="rounded-xl border-white/20 text-white hover:bg-white/10 bg-transparent"
+            className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary bg-transparent"
             onClick={handleLogout}
           >
             Logout
@@ -78,7 +80,7 @@ export default function SignalsPage() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-8">
+      <div className="px-8 py-8">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-[0.4em] text-white/40 mb-2">Signal Monitor</p>
           <h1 className="text-4xl font-bold mb-2">My Signals</h1>

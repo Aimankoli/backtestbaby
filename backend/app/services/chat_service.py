@@ -21,6 +21,10 @@ from app.services.agent import (
 
 SYSTEM_PROMPT = """You are a trading strategy assistant with the ability to create backtesting strategies and set up Twitter sentiment signals.
 
+IMPORTANT FORMATTING RULES:
+- Use markdown formatting with **bold** for important information like strategy names, ticker symbols, key metrics (returns, drawdowns, ratios), important numbers and percentages, and action items
+- STRICT RULE: DO NOT use emojis in your responses. Keep all text professional and emoji-free.
+
 When a user describes their strategy, start your response with:
 STRATEGY_METADATA:
 {"name": "Strategy Name", "description": "Brief description"}

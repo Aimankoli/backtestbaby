@@ -1,10 +1,12 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -19,6 +21,8 @@ type ConversationResponse = {
   id: string
   title: string
   status: string
+  strategy_id?: string | null
+  conversation_type: string
   messages: ConversationMessage[]
   created_at: string
   updated_at: string
@@ -44,7 +48,11 @@ const createClientId = () => {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-export default function ResearchChat() {
+type ResearchChatProps = {
+  initialConversationId?: string | null
+}
+
+export default function ResearchChat({ initialConversationId }: ResearchChatProps) {
   const [conversations, setConversations] = useState<ConversationResponse[]>([])
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ConversationMessage[]>([])
@@ -69,7 +77,7 @@ export default function ResearchChat() {
 
   const loadConversations = useCallback(async () => {
     try {
-      const data = await apiClient.get<ConversationResponse[]>("/research")
+      const data = await apiClient.get<ConversationResponse[]>("/conversations")
       const sorted = sortByUpdated(data)
       setConversations(sorted)
 
@@ -93,7 +101,7 @@ export default function ResearchChat() {
       }
       setError(null)
       try {
-        const conversation = await apiClient.get<ConversationResponse>(`/research/${conversationId}`)
+        const conversation = await apiClient.get<ConversationResponse>(`/conversations/${conversationId}`)
         setMessages(conversation.messages || [])
         updateConversationList(conversation)
       } catch (err) {
@@ -124,7 +132,7 @@ export default function ResearchChat() {
     if (!deleteConfirmId) return
 
     try {
-      await apiClient.delete(`/research/${deleteConfirmId}`)
+      await apiClient.delete(`/conversations/${deleteConfirmId}`)
       setConversations((prev) => prev.filter((c) => c.id !== deleteConfirmId))
 
       if (selectedConversationId === deleteConfirmId) {
@@ -146,8 +154,9 @@ export default function ResearchChat() {
   const handleCreateConversation = useCallback(async () => {
     setError(null)
     try {
-      const conversation = await apiClient.post<ConversationResponse>("/research", {
-        title: `Research Chat #${conversations.length + 1}`,
+      const conversation = await apiClient.post<ConversationResponse>("/conversations", {
+        title: `Research #${conversations.length + 1}`,
+        conversation_type: "research",
       })
       hasSelectedInitialConversation.current = true
       setSelectedConversationId(conversation.id)
@@ -234,7 +243,7 @@ export default function ResearchChat() {
       message: string,
       options?: { onContentChunk?: (chunk: string) => void },
     ) => {
-      const response = await fetch(`${API_BASE_URL}/research/${conversationId}/chat`, {
+      const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -352,6 +361,21 @@ export default function ResearchChat() {
   }, [loadConversations])
 
   useEffect(() => {
+    if (!initialConversationId) return
+    const focusConversation = async () => {
+      try {
+        setSelectedConversationId(initialConversationId)
+        await fetchConversation(initialConversationId)
+        hasSelectedInitialConversation.current = true
+      } catch (err) {
+        console.error("Failed to focus conversation:", err)
+        setError("This conversation no longer exists. It may have been deleted.")
+      }
+    }
+    focusConversation()
+  }, [fetchConversation, initialConversationId])
+
+  useEffect(() => {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
@@ -407,16 +431,17 @@ export default function ResearchChat() {
 
         {/* Sidebar scrollable area */}
         <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-6 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+          {/* Research Conversations Section */}
           <div className="space-y-2 mb-6">
             <div className="px-2 py-2 text-xs uppercase tracking-wide text-white/40">
-              Conversations
+              Research
             </div>
-            {conversations.length === 0 && (
+            {conversations.filter(c => c.conversation_type === "research").length === 0 && (
               <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-xs text-white/50">
-                No conversations yet. Start your first research chat.
+                No research chats yet.
               </div>
             )}
-            {conversations.map((conversation) => (
+            {conversations.filter(c => c.conversation_type === "research").map((conversation) => (
               <div
                 key={conversation.id}
                 className="relative group"
@@ -461,6 +486,61 @@ export default function ResearchChat() {
               </div>
             ))}
           </div>
+
+          {/* Strategy Conversations Section */}
+          {conversations.filter(c => c.conversation_type === "strategy").length > 0 && (
+            <div className="space-y-2 mb-6 pt-4 border-t border-white/10">
+              <div className="px-2 py-2 text-xs uppercase tracking-wide text-white/40">
+                Strategy
+              </div>
+              {conversations.filter(c => c.conversation_type === "strategy").map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className="relative group"
+                >
+                  <Link href={`/chat?conversationId=${conversation.id}`}>
+                    <button
+                      className={cn(
+                        "w-full rounded-2xl border px-4 py-3 text-left transition",
+                        "border-white/5 hover:border-white/20",
+                      )}
+                    >
+                      <div className="flex items-center justify-between text-sm font-medium pr-8">
+                        <span className="truncate">{conversation.title}</span>
+                        {conversation.strategy_id && (
+                          <span className="text-[10px] uppercase tracking-wide text-secondary">linked</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-white/50">
+                        {new Date(conversation.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </button>
+                  </Link>
+                  {/* Delete button */}
+                  <button
+                    onClick={(e) => handleDeleteClick(conversation.id, e)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-destructive/80 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-destructive z-10"
+                    title="Delete conversation"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="border-t border-white/10 px-5 py-4 text-xs text-white/40 flex-shrink-0">
@@ -505,19 +585,19 @@ export default function ResearchChat() {
                 </p>
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-secondary text-sm font-semibold mb-2">🔍 Web Research</div>
+                    <div className="text-secondary text-sm font-semibold mb-2">Web Research</div>
                     <p className="text-xs text-white/60">Search the web for current information, news, and market data</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-secondary text-sm font-semibold mb-2">🐦 Twitter Intelligence</div>
+                    <div className="text-secondary text-sm font-semibold mb-2">Twitter Intelligence</div>
                     <p className="text-xs text-white/60">Find viral tweets, analyze accounts, track hashtags & sentiment</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-secondary text-sm font-semibold mb-2">📊 Market Analysis</div>
+                    <div className="text-secondary text-sm font-semibold mb-2">Market Analysis</div>
                     <p className="text-xs text-white/60">Research stocks, crypto, and financial markets in real-time</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-secondary text-sm font-semibold mb-2">🎯 Signal Creation</div>
+                    <div className="text-secondary text-sm font-semibold mb-2">Signal Creation</div>
                     <p className="text-xs text-white/60">Set up automated Twitter monitoring for trading signals</p>
                   </div>
                 </div>
@@ -559,6 +639,7 @@ export default function ResearchChat() {
                       {message.role === "assistant" ? (
                         <div className="prose prose-invert max-w-none">
                           <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
                             components={{
                               h2: ({node, ...props}) => <h2 className="text-xl font-bold text-white mt-6 mb-3" {...props} />,
                               h3: ({node, ...props}) => <h3 className="text-lg font-semibold text-white mt-4 mb-2" {...props} />,
@@ -579,9 +660,25 @@ export default function ResearchChat() {
                           )}
                         </div>
                       ) : (
-                        <p className="whitespace-pre-wrap leading-relaxed text-white/90">
-                          {message.content}
-                        </p>
+                        <div className="prose prose-invert max-w-none leading-relaxed text-white/90">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                              strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
+                              em: ({ children }) => <em className="italic text-white/95">{children}</em>,
+                              h1: ({ children }) => <h1 className="text-2xl font-bold text-white mb-3 mt-4">{children}</h1>,
+                              h2: ({ children }) => <h2 className="text-xl font-bold text-white mb-2 mt-3">{children}</h2>,
+                              h3: ({ children }) => <h3 className="text-lg font-bold text-white mb-2 mt-3">{children}</h3>,
+                              ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                              li: ({ children }) => <li className="mb-1">{children}</li>,
+                              code: ({ children }) => <code className="bg-white/10 px-1.5 py-0.5 rounded text-secondary">{children}</code>,
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
                       )}
                     </div>
                   )
