@@ -57,6 +57,9 @@ export default function ChatPage() {
           ⚡ Backtest Sandbox
         </Link>
         <div className="flex items-center gap-6">
+          <Link href="/research" className="hover:text-secondary transition">
+            Research
+          </Link>
           <Link href="/strategies" className="hover:text-secondary transition">
             Strategies
           </Link>

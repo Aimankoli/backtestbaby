@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import Link from "next/link"
-import StrategiesTable from "@/components/strategies-table"
+import ResearchChat from "@/components/research-chat"
 import { apiClient } from "@/lib/api-client"
 
 interface UserResponse {
@@ -14,7 +13,7 @@ interface UserResponse {
   email: string
 }
 
-export default function StrategiesPage() {
+export default function ResearchPage() {
   const router = useRouter()
   const [user, setUser] = useState<UserResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -47,26 +46,28 @@ export default function StrategiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050608] text-white">
+    <main className="min-h-screen bg-[#050608]">
+      <div className="h-1 bg-secondary w-full" />
+
       {/* Navigation */}
-      <nav className="border-b border-white/10 bg-[#0a0b0f] px-8 py-5 flex items-center justify-between">
-        <Link href="/chat" className="text-2xl font-bold hover:text-secondary transition">
-          ⚡ Backtest Sandbox
+      <nav className="bg-primary text-primary-foreground px-6 py-4 flex items-center justify-between">
+        <Link href="/research" className="text-2xl font-bold">
+          🔬 Research Lab
         </Link>
         <div className="flex items-center gap-6">
-          <Link href="/chat" className="text-sm text-white/70 hover:text-secondary transition">
-            New Chat
+          <Link href="/chat" className="hover:text-secondary transition">
+            Strategy Chat
           </Link>
-          <Link href="/research" className="hover:text-secondary transition">
-            Research
+          <Link href="/strategies" className="hover:text-secondary transition">
+            Strategies
           </Link>
           <Link href="/signals" className="hover:text-secondary transition">
             Signals
           </Link>
-          <div className="text-sm text-white/60">{user?.username}</div>
+          <div className="text-sm">{user?.username}</div>
           <Button
             variant="outline"
-            className="rounded-xl border-white/20 text-white hover:bg-white/10 bg-transparent"
+            className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary bg-transparent"
             onClick={handleLogout}
           >
             Logout
@@ -75,17 +76,7 @@ export default function StrategiesPage() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-8">
-        <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.4em] text-white/40 mb-2">Strategy Library</p>
-          <h1 className="text-4xl font-bold mb-2">My Strategies</h1>
-          <p className="text-white/60">View and manage all your saved backtested strategies</p>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <StrategiesTable />
-        </div>
-      </div>
+      <ResearchChat />
     </main>
   )
 }

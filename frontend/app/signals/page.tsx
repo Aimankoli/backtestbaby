@@ -57,6 +57,9 @@ export default function SignalsPage() {
           <Link href="/chat" className="text-sm text-white/70 hover:text-secondary transition">
             New Chat
           </Link>
+          <Link href="/research" className="text-sm text-white/70 hover:text-secondary transition">
+            Research
+          </Link>
           <Link href="/strategies" className="text-sm text-white/70 hover:text-secondary transition">
             Strategies
           </Link>
