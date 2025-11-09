@@ -16,6 +16,7 @@ from app.services.conversation_service import (
     delete_conversation as delete_conversation_service
 )
 from app.services.chat_service import process_chat_message
+from app.services.research_chat_service import process_research_message
 from typing import List
 from bson import ObjectId
 
@@ -144,15 +145,29 @@ async def chat(
             detail="Conversation not found"
         )
 
-    # Stream the chat response
-    return StreamingResponse(
-        process_chat_message(
-            conversation_id=conversation_id,
-            user_id=current_user.id,
-            user_message=request.message
-        ),
-        media_type="application/x-ndjson"
-    )
+    # Route to appropriate service based on conversation type
+    conversation_type = conv.get("conversation_type", "strategy")
+
+    if conversation_type == "research":
+        # Use research chat service with Brave Search
+        return StreamingResponse(
+            process_research_message(
+                conversation_id=conversation_id,
+                user_id=current_user.id,
+                user_message=request.message
+            ),
+            media_type="application/x-ndjson"
+        )
+    else:
+        # Use strategy chat service
+        return StreamingResponse(
+            process_chat_message(
+                conversation_id=conversation_id,
+                user_id=current_user.id,
+                user_message=request.message
+            ),
+            media_type="application/x-ndjson"
+        )
 
 
 @router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
