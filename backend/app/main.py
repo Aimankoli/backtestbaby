@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
-from app.routes import auth, conversations, strategies
+from app.routes import auth, conversations, strategies, signals
+from app.services.signal_monitor import signal_monitor
 
 app = FastAPI(
     title="BacktestMCP API",
@@ -23,12 +24,16 @@ app.add_middleware(
 async def startup_event():
     """Run on application startup"""
     await connect_to_mongo()
+    # Start signal monitoring background service
+    await signal_monitor.start()
     print("Application started successfully")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Run on application shutdown"""
+    # Stop signal monitoring
+    await signal_monitor.stop()
     await close_mongo_connection()
     print("Application shutdown complete")
 
@@ -37,6 +42,7 @@ async def shutdown_event():
 app.include_router(auth.router)
 app.include_router(conversations.router)
 app.include_router(strategies.router)
+app.include_router(signals.router)
 
 
 @app.get("/")

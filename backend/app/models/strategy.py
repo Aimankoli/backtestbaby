@@ -19,6 +19,8 @@ class BacktestResult(BaseModel):
     win_rate: Optional[float] = None
     total_trades: Optional[int] = None
     plot_path: Optional[str] = None
+    plot_html: Optional[str] = None  # HTML content of the plot chart
+    data_csv: Optional[str] = None  # CSV data used for backtesting
     metrics: Dict[str, Any] = {}  # Additional metrics
     ran_at: datetime = Field(default_factory=datetime.utcnow)
 

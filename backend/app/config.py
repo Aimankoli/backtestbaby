@@ -22,3 +22,8 @@ MONGODB_DB_NAME = "BacktestMCP"
 # Dedalus
 DEDALUS_API_KEY = os.getenv("DEDALUS_API_KEY")
 DEFAULT_MODEL = "openai/gpt-4.1"
+
+# Twitter/X API
+X_BEARER_TOKEN = os.getenv("X_BEARER_TOKEN")
+X_CONSUMER_KEY = os.getenv("X_CONSUMER_KEY")
+X_CONSUMER_SECRET = os.getenv("X_CONSUMER_SECRET")

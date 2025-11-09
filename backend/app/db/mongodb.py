@@ -49,4 +49,18 @@ async def create_indexes():
     await db.strategies.create_index([("user_id", 1), ("updated_at", -1)])
     await db.strategies.create_index("status")
 
+    # Signals collection indexes
+    await db.signals.create_index("user_id")
+    await db.signals.create_index("conversation_id")
+    await db.signals.create_index("status")
+    await db.signals.create_index([("user_id", 1), ("status", 1)])
+    await db.signals.create_index([("status", 1), ("last_checked_at", 1)])  # For background monitor
+    await db.signals.create_index("twitter_username")
+
+    # Signal events collection indexes
+    await db.signal_events.create_index("signal_id")
+    await db.signal_events.create_index([("signal_id", 1), ("timestamp", -1)])
+    await db.signal_events.create_index("sentiment")
+    await db.signal_events.create_index("tweet_id")
+
     print("Database indexes created successfully")

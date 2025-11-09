@@ -187,7 +187,6 @@ async def setup_database():
     
     finally:
         if client:
-            client.close()
             print_step("Disconnected from MongoDB")
 
 
@@ -233,8 +232,7 @@ async def reset_database():
         sys.exit(1)
     
     finally:
-        if client:
-            client.close()
+        pass  # Client will be garbage collected
 
 
 def main():

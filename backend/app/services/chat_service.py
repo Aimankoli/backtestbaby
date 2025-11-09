@@ -143,7 +143,7 @@ async def process_chat_message(
                         user_id=user_id,
                         update_data={"backtest_code": backtest_data["code"]}
                     )
-                # Save backtest results
+                # Save backtest results with plot HTML and data CSV
                 if backtest_data.get("metrics"):
                     await add_backtest_result(
                         strategy_id=str(strategy["_id"]),
@@ -152,6 +152,8 @@ async def process_chat_message(
                             "backtest_id": backtest_data.get("backtest_id", ""),
                             "metrics": backtest_data["metrics"],
                             "plot_path": backtest_data.get("plot_path"),
+                            "plot_html": backtest_data.get("plot_html"),
+                            "data_csv": backtest_data.get("data_csv"),
                             "ran_at": datetime.utcnow()
                         }
                     )
@@ -172,6 +174,9 @@ async def extract_backtest_data(result: Any) -> Optional[Dict[str, Any]]:
     - description: Strategy description
     - metrics: Backtest metrics as a dict
     - plot_path: Path to the plot HTML file
+    - plot_html: HTML content of the plot
+    - data_csv: CSV data content
+    - data_path: Path to the data CSV file
     - backtest_id: Unique ID for this backtest run
     """
     try:
@@ -180,22 +185,32 @@ async def extract_backtest_data(result: Any) -> Optional[Dict[str, Any]]:
             "description": None,
             "metrics": {},
             "plot_path": None,
+            "plot_html": None,
+            "data_csv": None,
+            "data_path": None,
             "backtest_id": None,
             "script_path": None
         }
 
-        # Try to extract from tool_calls attribute (if available)
-        if hasattr(result, 'tool_calls') and result.tool_calls:
-            for tool_call in result.tool_calls:
-                tool_name = tool_call.get('name', '')
-                tool_output = tool_call.get('output', '')
+        # Extract from tool_results attribute (Dedalus structure)
+        if hasattr(result, 'tool_results') and result.tool_results:
+            for tool_result in result.tool_results:
+                tool_name = tool_result.get('name', '')
+                tool_output = tool_result.get('result', '')
+
+                if tool_name == 'fetch_stock_data' and tool_output:
+                    try:
+                        data_result = json.loads(tool_output)
+                        backtest_data["data_path"] = data_result.get("file_path")
+                    except Exception as e:
+                        print(f"[ERROR] Failed to parse data fetch result: {e}")
 
                 if tool_name == 'generate_backtest_script' and tool_output:
                     try:
                         script_data = json.loads(tool_output)
                         backtest_data["script_path"] = script_data.get("script_path")
                     except Exception as e:
-                        print(f"[DEBUG] Failed to parse script data: {e}")
+                        print(f"[ERROR] Failed to parse script data: {e}")
 
                 if tool_name == 'execute_backtest' and tool_output:
                     try:
@@ -204,30 +219,8 @@ async def extract_backtest_data(result: Any) -> Optional[Dict[str, Any]]:
                         backtest_data["plot_path"] = exec_data.get("plot_path")
                         backtest_data["backtest_id"] = exec_data.get("script_path", "").split("/")[-1].replace(".py", "")
                     except Exception as e:
-                        print(f"[DEBUG] Failed to parse exec data: {e}")
-        
-        # Try to extract from intermediate_steps attribute (alternative structure)
-        elif hasattr(result, 'intermediate_steps') and result.intermediate_steps:
-            for step in result.intermediate_steps:
-                if isinstance(step, tuple) and len(step) >= 2:
-                    action, observation = step[0], step[1]
-                    tool_name = getattr(action, 'tool', None) or getattr(action, 'name', '')
-                    
-                    if 'generate_backtest_script' in str(tool_name):
-                        try:
-                            script_data = json.loads(observation) if isinstance(observation, str) else observation
-                            backtest_data["script_path"] = script_data.get("script_path")
-                        except Exception as e:
-                            print(f"[DEBUG] Failed to parse script from intermediate steps: {e}")
-                    
-                    if 'execute_backtest' in str(tool_name):
-                        try:
-                            exec_data = json.loads(observation) if isinstance(observation, str) else observation
-                            backtest_data["metrics"] = exec_data.get("metrics", {})
-                            backtest_data["plot_path"] = exec_data.get("plot_path")
-                        except Exception as e:
-                            print(f"[DEBUG] Failed to parse exec from intermediate steps: {e}")
-        
+                        print(f"[ERROR] Failed to parse exec data: {e}")
+
         # If we have a script path, read the code
         if backtest_data.get("script_path"):
             try:
@@ -235,25 +228,43 @@ async def extract_backtest_data(result: Any) -> Optional[Dict[str, Any]]:
                 script_path = Path(backtest_data["script_path"])
                 if script_path.exists():
                     backtest_data["code"] = script_path.read_text()
-                    print(f"[DEBUG] Successfully read backtest code from {script_path}")
+                    print(f"[DEBUG] Read backtest code: {len(backtest_data['code'])} chars")
             except Exception as e:
-                print(f"[DEBUG] Failed to read script file: {e}")
+                print(f"[ERROR] Failed to read script file: {e}")
+
+        # Read plot HTML file
+        if backtest_data.get("plot_path"):
+            try:
+                from pathlib import Path
+                plot_path = Path(backtest_data["plot_path"])
+                if plot_path.exists():
+                    backtest_data["plot_html"] = plot_path.read_text()
+                    print(f"[DEBUG] Read plot HTML: {len(backtest_data['plot_html'])} chars")
+            except Exception as e:
+                print(f"[ERROR] Failed to read plot HTML file: {e}")
+
+        # Read data CSV file
+        if backtest_data.get("data_path"):
+            try:
+                from pathlib import Path
+                data_path = Path(backtest_data["data_path"])
+                if data_path.exists():
+                    backtest_data["data_csv"] = data_path.read_text()
+                    print(f"[DEBUG] Read data CSV: {len(backtest_data['data_csv'])} chars")
+            except Exception as e:
+                print(f"[ERROR] Failed to read data CSV file: {e}")
 
         # Fallback: Try to parse metrics from the final_output text
         if not backtest_data.get("metrics") and hasattr(result, 'final_output'):
             backtest_data["metrics"] = parse_metrics_from_text(result.final_output)
-            if backtest_data["metrics"]:
-                print(f"[DEBUG] Parsed metrics from text output")
-        
+
         # Only return if we have actual backtest data (code or metrics)
         if backtest_data.get("code") or backtest_data.get("metrics"):
-            print(f"[DEBUG] Extracted backtest data with {len(backtest_data.get('metrics', {}))} metrics")
             return backtest_data
 
-        print("[DEBUG] No backtest data found in result")
         return None
     except Exception as e:
-        print(f"[DEBUG] Error extracting backtest data: {e}")
+        print(f"[ERROR] Error extracting backtest data: {e}")
         import traceback
         traceback.print_exc()
         return None

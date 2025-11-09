@@ -1,6 +1,7 @@
 from dedalus_labs import AsyncDedalus, DedalusRunner
 from typing import Optional, List, Dict, Any, AsyncIterator
 import os
+from app.config import DEDALUS_API_KEY
 
 class DedalusService:
     """Singleton service for Dedalus client"""
@@ -15,9 +16,9 @@ class DedalusService:
 
     def __init__(self):
         if self._client is None:
-            self._client = AsyncDedalus()
+            self._client = AsyncDedalus(api_key=DEDALUS_API_KEY)
             self._runner = DedalusRunner(self._client)
-            print("Dedalus client initialized")
+            print("Dedalus client initialized with API key")
 
     async def chat_with_history(
         self,
