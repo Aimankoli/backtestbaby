@@ -111,7 +111,7 @@ class SignalMonitor:
         twitter_username = signal["twitter_username"]
         conversation_id = signal["conversation_id"]
         user_id = signal["user_id"]
-        check_interval = signal.get("parameters", {}).get("check_interval", 60)
+        check_interval = signal.get("parameters", {}).get("check_interval", 1.0)
 
         # Check if we should skip this check based on interval
         last_checked = signal.get("last_checked_at")

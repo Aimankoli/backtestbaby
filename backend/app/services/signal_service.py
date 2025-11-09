@@ -9,7 +9,7 @@ async def create_signal(
     conversation_id: str,
     twitter_username: str,
     ticker: Optional[str] = None,
-    check_interval: int = 60,
+    check_interval: float = 1.0,
     description: Optional[str] = None
 ) -> Dict[str, Any]:
     """
@@ -20,7 +20,7 @@ async def create_signal(
         conversation_id: Conversation to send updates to
         twitter_username: Twitter username to monitor (without @)
         ticker: Ticker to trade (None = model decides)
-        check_interval: Seconds between checks
+        check_interval: Seconds between checks (default: 1.0)
         description: Optional description
 
     Returns:

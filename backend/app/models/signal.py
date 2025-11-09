@@ -7,14 +7,14 @@ class SignalCreate(BaseModel):
     """Request model for creating a new signal"""
     twitter_username: str = Field(..., description="Twitter username to monitor (without @)")
     ticker: Optional[str] = Field(None, description="Ticker to trade, or None for model to decide")
-    check_interval: int = Field(60, description="Check interval in seconds", ge=30, le=300)
+    check_interval: float = Field(1.0, description="Check interval in seconds", ge=0.5, le=1.5)
     description: Optional[str] = Field(None, description="User description of what this signal does")
 
 
 class SignalUpdate(BaseModel):
     """Request model for updating a signal"""
     status: Optional[str] = Field(None, description="Signal status: active, paused, stopped")
-    check_interval: Optional[int] = Field(None, description="Check interval in seconds", ge=30, le=300)
+    check_interval: Optional[float] = Field(None, description="Check interval in seconds", ge=0.5, le=1.5)
     description: Optional[str] = Field(None, description="User description")
 
 

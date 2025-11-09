@@ -31,7 +31,7 @@ STRATEGY_METADATA:
 
 When a user asks to monitor a Twitter account or create a signal, start your response with:
 SIGNAL_METADATA:
-{"twitter_username": "username", "ticker": "SYMBOL", "check_interval": 60, "description": "Brief description"}
+{"twitter_username": "username", "ticker": "SYMBOL", "check_interval": 1, "description": "Brief description"}
 
 Examples of signal requests:
 - "Monitor @elonmusk for TSLA signals"
@@ -185,7 +185,7 @@ async def process_chat_message(
                 conversation_id=conversation_id,
                 twitter_username=signal_metadata["twitter_username"],
                 ticker=signal_metadata.get("ticker"),
-                check_interval=signal_metadata.get("check_interval", 60),
+                check_interval=signal_metadata.get("check_interval", 1.0),
                 description=signal_metadata.get("description") or f"Monitor @{signal_metadata['twitter_username']} via chat"
             )
 
@@ -199,7 +199,7 @@ async def process_chat_message(
                     "signal_id": signal_id,
                     "twitter_username": signal["twitter_username"],
                     "ticker": signal.get("ticker"),
-                    "check_interval": signal["parameters"].get("check_interval", 60),
+                    "check_interval": signal["parameters"].get("check_interval", 1.0),
                     "status": signal["status"]
                 }
             }) + "\n"
@@ -439,7 +439,7 @@ def extract_signal_metadata(response: str) -> Optional[Dict[str, Any]]:
     {
       "twitter_username": "...",
       "ticker": "...",
-      "check_interval": 60,
+      "check_interval": 1,
       "description": "..."
     }
     """
@@ -461,7 +461,7 @@ def extract_signal_metadata(response: str) -> Optional[Dict[str, Any]]:
 
                 # Set defaults
                 if "check_interval" not in metadata:
-                    metadata["check_interval"] = 60
+                    metadata["check_interval"] = 1.0
 
                 # ticker can be None
                 if "ticker" not in metadata:
@@ -472,14 +472,14 @@ def extract_signal_metadata(response: str) -> Optional[Dict[str, Any]]:
             # If JSON parsing fails, try to extract manually
             username_match = re.search(r'"twitter_username"\s*:\s*"@?([^"]+)"', response)
             ticker_match = re.search(r'"ticker"\s*:\s*"([^"]+)"', response)
-            interval_match = re.search(r'"check_interval"\s*:\s*(\d+)', response)
+            interval_match = re.search(r'"check_interval"\s*:\s*([\d.]+)', response)
             desc_match = re.search(r'"description"\s*:\s*"([^"]+)"', response)
 
             if username_match:
                 return {
                     "twitter_username": username_match.group(1),
                     "ticker": ticker_match.group(1) if ticker_match else None,
-                    "check_interval": int(interval_match.group(1)) if interval_match else 60,
+                    "check_interval": float(interval_match.group(1)) if interval_match else 1.0,
                     "description": desc_match.group(1) if desc_match else None
                 }
 

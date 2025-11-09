@@ -12,7 +12,7 @@ from datetime import datetime
 def create_twitter_signal(
     twitter_username: str,
     ticker: Optional[str] = None,
-    check_interval: int = 60,
+    check_interval: float = 1.0,
     description: Optional[str] = None
 ) -> str:
     """
@@ -26,7 +26,7 @@ def create_twitter_signal(
     Args:
         twitter_username: Twitter username to monitor (with or without @)
         ticker: Stock ticker symbol to associate with this signal (e.g., 'TSLA', 'SPY')
-        check_interval: How often to check for new tweets in seconds (default: 60)
+        check_interval: How often to check for new tweets in seconds (default: 1.0, range: 0.5-1.5)
         description: Optional description of what this signal monitors
 
     Returns:
